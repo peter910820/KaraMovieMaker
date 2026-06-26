@@ -3,13 +3,239 @@
              xmlns:vm="using:KaraMovieMaker.ViewModels"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="400"
+             mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="600"
              x:Class="KaraMovieMaker.Views.VideoView"
              x:DataType="vm:VideoViewModel">
 
-    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8">
-        <TextBlock Text="{Binding Title}" HorizontalAlignment="Center" FontSize="20"/>
-        <TextBlock Text="{Binding Description}" HorizontalAlignment="Center" Opacity="0.7"/>
-    </StackPanel>
+    <UserControl.Styles>
+        <Style Selector="Button.accent-play">
+            <Setter Property="Width" Value="40"/>
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="CornerRadius" Value="20"/>
+            <Setter Property="Background" Value="#6c8cff"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Button.accent-play:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#8aa2ff"/>
+        </Style>
+        <Style Selector="Button.import-btn">
+            <Setter Property="Background" Value="#6c8cff"/>
+            <Setter Property="Foreground" Value="#16161c"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="24,12"/>
+            <Setter Property="CornerRadius" Value="24"/>
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+        <Style Selector="Button.import-btn:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#8aa2ff"/>
+        </Style>
+        <Style Selector="Slider.progress">
+            <Setter Property="Foreground" Value="#6c8cff"/>
+            <Setter Property="Background" Value="#3a3a48"/>
+        </Style>
+        <Style Selector="Slider.volume">
+            <Setter Property="Width" Value="100"/>
+            <Setter Property="Foreground" Value="#9a9aa8"/>
+            <Setter Property="Background" Value="#3a3a48"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Grid Background="#16161c">
+        <Grid RowDefinitions="*,Auto">
+
+            <!-- 空狀態 -->
+            <StackPanel Grid.Row="0"
+                        Spacing="24"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        IsVisible="{Binding !IsAudioLoaded}">
+                <Border Width="120" Height="120"
+                        CornerRadius="8"
+                        Background="#262630">
+                    <Viewbox Width="48" Height="48" Opacity="0.5">
+                        <Path Fill="#9a9aa8"
+                              Data="M12,3 L12,21 M6,8 L6,16 M18,6 L18,18"/>
+                    </Viewbox>
+                </Border>
+                <StackPanel Spacing="8" HorizontalAlignment="Center">
+                    <TextBlock Text="匯入音訊開始預覽"
+                               FontSize="24"
+                               FontWeight="Bold"
+                               Foreground="#f5f5f7"
+                               HorizontalAlignment="Center"/>
+                    <TextBlock Text="支援 MP3、WAV、FLAC、AAC 等格式"
+                               FontSize="14"
+                               Foreground="#9a9aa8"
+                               HorizontalAlignment="Center"/>
+                </StackPanel>
+                <Button Classes="import-btn"
+                        HorizontalAlignment="Center"
+                        Content="選擇音訊檔案"
+                        Command="{Binding PickAudioCommand}"/>
+                <TextBlock Text="{Binding ErrorMessage}"
+                           Foreground="#f87171"
+                           TextWrapping="Wrap"
+                           MaxWidth="400"
+                           HorizontalAlignment="Center"
+                           IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+            </StackPanel>
+
+            <!-- 已載入：中央封面 -->
+            <StackPanel Grid.Row="0"
+                        Spacing="32"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        IsVisible="{Binding IsAudioLoaded}">
+                <Border Width="232" Height="232" CornerRadius="8">
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                            <GradientStop Color="#3a3a55" Offset="0"/>
+                            <GradientStop Color="#1e1e26" Offset="1"/>
+                        </LinearGradientBrush>
+                    </Border.Background>
+                    <Viewbox Width="80" Height="80" Opacity="0.4">
+                        <Path Fill="#ffffff"
+                              Data="M12,3 C7.03,3 3,7.03 3,12 C3,16.97 7.03,21 12,21 C16.97,21 21,16.97 21,12 C21,7.03 16.97,3 12,3 Z M10,16.5 L10,7.5 L16,12 Z"/>
+                    </Viewbox>
+                </Border>
+                <StackPanel Spacing="8" HorizontalAlignment="Center" MaxWidth="400">
+                    <TextBlock Text="{Binding TrackTitle}"
+                               FontSize="28"
+                               FontWeight="Bold"
+                               Foreground="#f5f5f7"
+                               TextAlignment="Center"
+                               TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Text="{Binding FileName}"
+                               FontSize="14"
+                               Foreground="#9a9aa8"
+                               TextAlignment="Center"
+                               TextTrimming="CharacterEllipsis"/>
+                </StackPanel>
+            </StackPanel>
+
+            <!-- 底部播放列 -->
+            <Border Grid.Row="1"
+                    Background="#1e1e26"
+                    BorderBrush="#2c2c38"
+                    BorderThickness="0,1,0,0"
+                    MinHeight="96"
+                    Padding="16,10"
+                    IsVisible="{Binding IsAudioLoaded}">
+                <StackPanel Spacing="10">
+
+                    <!-- 進度條（獨立一行） -->
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                        <TextBlock Grid.Column="0"
+                                   Text="{Binding PositionLabel}"
+                                   Foreground="#9a9aa8"
+                                   FontSize="11"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,8,0"
+                                   MinWidth="40"/>
+                        <Border x:Name="ProgressHost"
+                                Grid.Column="1"
+                                Background="Transparent"
+                                Cursor="Hand"
+                                VerticalAlignment="Center"
+                                PointerPressed="OnProgressPointerPressed"
+                                PointerMoved="OnProgressPointerMoved"
+                                PointerReleased="OnProgressPointerReleased">
+                            <Slider x:Name="ProgressSlider"
+                                    Classes="progress"
+                                    IsHitTestVisible="False"
+                                    Minimum="0"
+                                    Maximum="{Binding DurationSeconds}"
+                                    Value="{Binding PositionSeconds}"/>
+                        </Border>
+                        <TextBlock Grid.Column="2"
+                                   Text="{Binding DurationLabel}"
+                                   Foreground="#9a9aa8"
+                                   FontSize="11"
+                                   VerticalAlignment="Center"
+                                   Margin="8,0,0,0"
+                                   MinWidth="40"
+                                   TextAlignment="Right"/>
+                    </Grid>
+
+                    <!-- 控制列 -->
+                    <Grid ColumnDefinitions="*,Auto,*">
+                        <!-- 左：曲目 -->
+                        <StackPanel Grid.Column="0"
+                                    Orientation="Horizontal"
+                                    Spacing="12"
+                                    VerticalAlignment="Center"
+                                    HorizontalAlignment="Left">
+                            <Border Width="48" Height="48" CornerRadius="4" Background="#262630">
+                                <Viewbox Width="22" Height="22" Opacity="0.5">
+                                    <Path Fill="#9a9aa8"
+                                          Data="M12,3 C7.03,3 3,7.03 3,12 C3,16.97 7.03,21 12,21 C16.97,21 21,16.97 21,12 C21,7.03 16.97,3 12,3 Z M10,16.5 L10,7.5 L16,12 Z"/>
+                                </Viewbox>
+                            </Border>
+                            <StackPanel VerticalAlignment="Center" Spacing="2" MaxWidth="200">
+                                <TextBlock Text="{Binding TrackTitle}"
+                                           FontWeight="SemiBold"
+                                           Foreground="#f5f5f7"
+                                           FontSize="14"
+                                           TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Text="本機音訊"
+                                           Foreground="#9a9aa8"
+                                           FontSize="12"/>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <!-- 中：播放 -->
+                        <Button Grid.Column="1"
+                                Classes="accent-play"
+                                VerticalAlignment="Center"
+                                Command="{Binding TogglePlayPauseCommand}"
+                                ToolTip.Tip="播放 / 暫停">
+                            <Viewbox Width="16" Height="16">
+                                <Canvas Width="24" Height="24">
+                                    <Path IsVisible="{Binding !IsPlaying}"
+                                          Fill="#16161c"
+                                          Data="M9,6 L9,18 L19,12 Z"/>
+                                    <Path IsVisible="{Binding IsPlaying}"
+                                          Fill="#16161c"
+                                          Data="M7,6 L7,18 L11,18 L11,6 Z M13,6 L13,18 L17,18 L17,6 Z"/>
+                                </Canvas>
+                            </Viewbox>
+                        </Button>
+
+                        <!-- 右：音量 -->
+                        <StackPanel Grid.Column="2"
+                                    Orientation="Horizontal"
+                                    Spacing="8"
+                                    VerticalAlignment="Center"
+                                    HorizontalAlignment="Right">
+                            <Viewbox Width="16" Height="16">
+                                <Path Fill="#9a9aa8"
+                                      Data="M3,10 L3,14 L7,14 L12,19 L12,5 L7,10 Z"/>
+                            </Viewbox>
+                            <Slider Classes="volume"
+                                    Minimum="0"
+                                    Maximum="100"
+                                    Value="{Binding Volume}"
+                                    VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Row="1"
+                    Background="#1e1e26"
+                    BorderBrush="#2c2c38"
+                    BorderThickness="0,1,0,0"
+                    Padding="16,12"
+                    IsVisible="{Binding !IsAudioLoaded}">
+                <TextBlock Text="尚未選擇音訊"
+                           Foreground="#9a9aa8"
+                           FontSize="13"
+                           HorizontalAlignment="Center"/>
+            </Border>
+        </Grid>
+    </Grid>
 
 </UserControl>
